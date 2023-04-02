@@ -1,0 +1,23 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/jseablom/ros/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/jseablom/ros/src/ece5532_project_ideas/igvc_bag_processing/include/**",
+        "/home/jseablom/ros/src/winter2023_ece5532_examples/roundbot_local_planner/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
