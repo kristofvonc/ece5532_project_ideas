@@ -11,5 +11,7 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <exec_depend>audibot_path_following</exec_depend>
+  <!-- added the following line below-->
+  <exec_depend>roscpp</exec_depend>
 
 </package>
