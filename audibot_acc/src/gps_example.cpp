@@ -1,11 +1,24 @@
-//implementing header files in the program
-#include <ros/ros.h> //ros header file
-#include <std_msgs/Float32.h> //for debugging purposes, not relevant for ACC implementation
-#include <gazebo_msgs/ModelState.h> //gazebo messages to get positions of the models in the simulation
-#include <cmath> //math library for sqrt function used in displacment calculation
-#include <geometry_msgs/Vector3.h> //pose.position us if Vector3 type (x,y,z)
-#include <geometry_msgs/Twist.h> //library for linear and angular velocity for x,y,z, 
-//in the context of audibot, we use the x component for linear velocity and y component for angular velocity 
+//Program to implement adaptive cruise control (ACC) feature
+
+// Version 1.1 
+// Date: 4/2/2023
+// Cleaned up code/comments and fixed errors in previous version
+
+// Authors (github names):
+// jseablom (N/A)
+// Kacper Wojtowicz (KacoerWijtowicz)
+// YawanthBoppana (rogueassassin14)
+// Kristof von Czarnowski (kristofvonc)
+
+
+// Implementing header files in the program
+#include <ros/ros.h> // ROS header file
+#include <gazebo_msgs/ModelState.h> // Gazebo messages to get positions of the models in the simulation
+#include <cmath> // Math library for sqrt function used in displacement calculation
+#include <geometry_msgs/Vector3.h> // pose.position is of Vector3 type (x, y, z [Cartesian])
+#include <geometry_msgs/Twist.h> // Library for linear and angular velocity for x, y, and z axes.
+
+// In the context of audibot, we use the x component for linear velocity and y component for angular velocity (steering)
 
 //Level 1: Implement core system with ideal measurements
 //Look up the states of the two cars' Gazebo models, extract their positions, and compute the exact distance between them.
@@ -13,102 +26,98 @@
 //The audibot_path_following node publishes to a geometry_msgs/Twist topic to hold a constant speed and to follow the lane markings. To impose a different speed for ACC, remap this topic to the ACC node and
 //then replace the linear.x field with a new speed, keeping the angular.z unchanged
 
-//stores the position of the target and ego vehicle models
+// Global variables to store the position of the target and ego vehicle models
 geometry_msgs::Pose target_vehicle_position;
 geometry_msgs::Pose ego_vehicle_position; 
 
-//set the desired following distance for adaptive cruise control
+// Set the desired following distance for adaptive cruise control
 const double following_distance = 1.0; 
-//value of '1' may need to be 'tuned' based on vehicle dynamics (braking/acceleration ability of audibot)
+// The value of '1' may need to be 'tuned' based on vehicle dynamics (braking/acceleration ability of audibot)
 
-//callback function whenever a new /gazebo/model_states message is received
+// Callback function whenever a new /gazebo/model_states message is received
 void modelStatesCallbackFunction(const gazebo_msgs::ModelState::ConstPtr& msg) {
-  //rostopic echo /gazebo/model_states gives:
-  //name: 
-  //- ground_plane (index 0)
-  //- lane_merge_0 (index 1)
-  //- lane_merge_2 (index 2)
-  //- lane_merge_3 (index 3)
-  //- lane_merge_4 (index 4)
-  //- ego_vehicle (index 5)
-  //- target_vehicle (index 6)
-  //end of topic /gazebo/model_states name list
+  // "rostopic echo /gazebo/model_states" gives:
+
+  // name: 
+  // - ground_plane (index 0)
+  // - lane_merge_0 (index 1)
+  // - lane_merge_2 (index 2)
+  // - lane_merge_3 (index 3)
+  // - lane_merge_4 (index 4)
+  // - ego_vehicle (index 5)
+  // - target_vehicle (index 6)
+
+  // End of topic /gazebo/model_states name list
 
   //assign values based on index (above)
-  ego_vehicle_position = msg->pose[5]; 
-  target_vehicle_position = msg->pose[6]; 
+  ego_vehicle_position = msg->pose[5]; // Corresponds to EGO vehicle model
+  target_vehicle_position = msg->pose[6]; // Corresponds to Target vehicle model
 }
 
+// Timer callback - runs every 100ms
 void timerCallback(const ros::TimerEvent& event) 
 {
-  //calculate x,y,z displacment in cartesian coordinates and find geometric mean (RMS)
+  // Calculate x, y, and z displacement in cartesian coordinates and find geometric mean 
   double dx = target_vehicle_position.position.x - ego_vehicle_position.position.x;
   double dy = target_vehicle_position.position.y - ego_vehicle_position.position.y;
   double dz = target_vehicle_position.position.z - ego_vehicle_position.position.z;
+
+  // The displacement calculatation is assuming both vehicles traveling in a straight line!
+  // This is not true when the vehicles switch lanes or take a curve
+
   double displacement  = std::sqrt(dx*dx + dy*dy + dz*dz);
 
-  //print calculated displacment to the console - debugging purposes
+  // Print calculated displacement to the console for debugging purposes
   ROS_INFO("Displacement = %f", displacement);
 
-  //control algorithm for linear speed based on displacment and set following distance
-  double linear_speed; 
+  // Control algorithm for linear speed based on straight-line displacement and defined following distance
+  double linear_speed = 0.0; 
 
-  //try to get parameter "speed" from launch file
+  // Try to get parameter "speed" from launch file
   if (!ros::param::get("speed", linear_speed)) {
-    //if parameter not found, assign the default value + 0.1 (for debugging purposes)
+    // If parameter not found, assign the default value + 0.1 (for debugging purposes)
     linear_speed = 23.1;
   }
 
-  //basic control algorithm, may want to implement PID controller, as yaswanth was suggesting 
+  // Basic control algorithm, may want to implement PID controller, as Yaswanth was suggesting...
+  // We may also want to control our speed based on time-to-collision (or 'TTC') or relative velocity.
+
+  // If the distance is greater than the set following distance, 
+  // maintain the same (set) linear speed, 
+  // otherwise adjust the set speed based on the distance between the two vehicles.
   if (displacement > following_distance) {
-    linear_speed = 23;
+    linear_speed = linear_speed; // Maintain speed - Do not speed up - Speeding ticket!
   } else { 
-    linear_speed = displacement/following_distance
+    linear_speed = displacement/following_distance * linear_speed; // Adjust speed based on distance
   }
 
-  ROS_INFO("Linear speed = %f", linear_speed); //for debugging
+  ROS_INFO("Linear speed = %f", linear_speed); // For debugging: print linear speed value
 
-  //publishing the speed command
+  static ros::Publisher pub = node_handle.advertise<geometry_msgs::Twist>("/ego_vehicle/cmd_vel", 1);
+  // Publishing the speed command 
   geometry_msgs::Twist twist_cmd;
-  //NOT IMPLEMENTED: need to remap the twist messages from audibot_path_following node to this (acc) node 
+  // Note: Need to remap the twist messages from audibot_path_following node to this (acc) node 
   twist_cmd.linear.x = linear_speed; 
-  twist_cmd.angular.z = 0.0; //not the correct angular.z value, need to pass from audibot_path_following node
-  twist_cmd_publisher.publish(twist_cmd)
+  twist_cmd.angular.z = 0.0; // Not the correct angular.z value, need to pass from audibot_path_following node
+  pub.publish(twist_cmd)
 
-  //for debugging - not relevant to ACC implementation
-  acc_msg.data = 420.69;
-  acc_publisher.publish(acc_msg);
 }
 
-//initializing the adaptive cruise control (ACC) node 
-//int main(int argc, char** argv) {
+// Main function - Initializing the adaptive cruise control (ACC) node, subscribers and timers.
 int main(int argc, char **argv) {
   ros::init(argc, argv, "acc_node");
 
-  //used to access specific ROS parameters
-  //ros::NodeHandle node_handle("~"); 
-
-  //create a nodehandle for the acc node
+  // Ceate a nodehandle for the acc node
   ros::NodeHandle node_handle;
 
-  //creating an object in the /ego_vehicle namespace
-  ros::NodeHandle node_handle_namespace(node_handle, "/ego_vehicle"); 
+  // Subscriber to "gazebo/model_states"
+  ros::Subscriber model_states_subscriber = node_handle.subscribe("/gazebo/model_states", 1, modelStatesCallbackFunction);
 
-  //publisher for our node
-  //below publisher for debugging only, not relevant to ACC implementation
-  ros::Publisher acc_publisher = node_handle_namespace.advertise<std_msgs::Float32>("acc", 1);
-  //publisher for the twist_cmd
-  ros::Publisher twist_cmd_publisher = node_handle.advertise<geometry_msgs::("twist_cmd", 1);
-
-  //subscriber to gazebo/model_states
-  ros::Subscriber model_states_subscriber = node_handle_namespace.subscribe("/gazebo/model_states", 1, modelStatesCallbackFunction);
-
-  //publishing some data to the'acc' topic within the 'ego_vehicle' namespace
-  std_msgs::Float32 acc_msg;
-
-  //for timing our node, currently set to 20 Hz (argument specified in seconds)
+  // Creat a timer for our node, currently set to 20 Hz (Argument specified in seconds)
   ros::Timer timer = node_handle.createTimer(ros::Duration(0.05), timerCallback);
 
-  //keep the node running
+  // Keep the node running
   ros::spin();
+
+  //return 0;
 }
