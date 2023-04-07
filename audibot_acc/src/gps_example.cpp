@@ -34,6 +34,9 @@ geometry_msgs::Pose ego_vehicle_position;
 const double following_distance = 1.0; 
 // The value of '1' may need to be 'tuned' based on vehicle dynamics (braking/acceleration ability of audibot)
 
+//creat static publisher
+static ros::Publisher pub; 
+
 // Callback function whenever a new /gazebo/model_states message is received
 void modelStatesCallbackFunction(const gazebo_msgs::ModelState::ConstPtr& msg) {
   // "rostopic echo /gazebo/model_states" gives:
@@ -50,7 +53,7 @@ void modelStatesCallbackFunction(const gazebo_msgs::ModelState::ConstPtr& msg) {
   // End of topic /gazebo/model_states name list
 
   //assign values based on index (above)
-  ego_vehicle_position = msg->pose[5]; // Corresponds to EGO vehicle model
+  ego_vehicle_position = msg->pose[5]; // Corresponds to EGO vehicle model           
   target_vehicle_position = msg->pose[6]; // Corresponds to Target vehicle model
 }
 
@@ -93,7 +96,7 @@ void timerCallback(const ros::TimerEvent& event)
 
   ROS_INFO("Linear speed = %f", linear_speed); // For debugging: print linear speed value
 
-  static ros::Publisher pub = node_handle.advertise<geometry_msgs::Twist>("/ego_vehicle/cmd_vel", 1);
+  
   // Publishing the speed command 
   geometry_msgs::Twist twist_cmd;
   // Note: Need to remap the twist messages from audibot_path_following node to this (acc) node 
@@ -115,6 +118,9 @@ int main(int argc, char **argv) {
 
   // Creat a timer for our node, currently set to 20 Hz (Argument specified in seconds)
   ros::Timer timer = node_handle.createTimer(ros::Duration(0.05), timerCallback);
+
+  // Creates a pcmd_vel ublisher
+  pub = node_handle.advertise<geometry_msgs::Twist>("/ego_vehicle/cmd_vel", 1);
 
   // Keep the node running
   ros::spin();
