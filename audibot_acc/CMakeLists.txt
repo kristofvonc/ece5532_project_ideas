@@ -12,9 +12,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(final_project
+add_executable(audibot_acc
   src/gps_example.cpp
 )
-target_link_libraries(final_project
+target_link_libraries(audibot_acc
   ${catkin_LIBRARIES}
 )

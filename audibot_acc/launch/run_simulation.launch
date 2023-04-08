@@ -2,6 +2,8 @@
 <launch>
 <!-- testing the push-->
 
+<!-- ERROR: cannot launch node of type [audibot_acc/gps_example]: Cannot locate node of type [gps_example] in package [audibot_acc]. Make sure file exists in package path and permission is set to executable (chmod +x) -->
+
   <!-- Ego vehicle -->
   <param name="/ego_vehicle/gps/ref_lat" value="42.853452" />
   <param name="/ego_vehicle/gps/ref_lon" value="-83.069858" />
@@ -25,7 +27,7 @@
     </node>
     <node pkg="audibot_twist_controller" type="audibot_twist_node" name="twist_control" output="screen" />
     <!-- added this line below -->
-    <node pkg="audibot_acc" type="gps_example" name="acc_node" output="screen" />
+    <node pkg="audibot_acc" type="gps_example" name="audibot_acc_node" output="screen" />
   </group>
 
   <!-- Target vehicle -->

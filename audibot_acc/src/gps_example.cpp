@@ -34,7 +34,7 @@ geometry_msgs::Pose ego_vehicle_position;
 const double following_distance = 1.0; 
 // The value of '1' may need to be 'tuned' based on vehicle dynamics (braking/acceleration ability of audibot)
 
-//creat static publisher
+//Create static publisher
 static ros::Publisher pub; 
 
 // Callback function whenever a new /gazebo/model_states message is received
@@ -52,9 +52,9 @@ void modelStatesCallbackFunction(const gazebo_msgs::ModelState::ConstPtr& msg) {
 
   // End of topic /gazebo/model_states name list
 
-  //assign values based on index (above)
-  ego_vehicle_position = msg->pose[5]; // Corresponds to EGO vehicle model           
-  target_vehicle_position = msg->pose[6]; // Corresponds to Target vehicle model
+  //Assign values based on index (above)
+  const auto& ego_vehicle_position = msg->pose.position; // Index 5 corresponds to EGO vehicle model           
+  const auto& target_vehicle_position = msg->pose.position; // Index 6 corresponds to Target vehicle model
 }
 
 // Timer callback - runs every 100ms
@@ -96,19 +96,20 @@ void timerCallback(const ros::TimerEvent& event)
 
   ROS_INFO("Linear speed = %f", linear_speed); // For debugging: print linear speed value
 
-  
   // Publishing the speed command 
   geometry_msgs::Twist twist_cmd;
   // Note: Need to remap the twist messages from audibot_path_following node to this (acc) node 
   twist_cmd.linear.x = linear_speed; 
   twist_cmd.angular.z = 0.0; // Not the correct angular.z value, need to pass from audibot_path_following node
-  pub.publish(twist_cmd)
+  //Publish to twist_cmd 
+  pub.publish(twist_cmd);
+  //Was using "static ros::Publisher pub = node_handle.advertise<geometry_msgs::Twist>("/ego_vehicle/cmd_vel", 1);" previously
 
 }
 
 // Main function - Initializing the adaptive cruise control (ACC) node, subscribers and timers.
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "acc_node");
+  ros::init(argc, argv, "audibot_acc_node");
 
   // Ceate a nodehandle for the acc node
   ros::NodeHandle node_handle;
@@ -119,7 +120,7 @@ int main(int argc, char **argv) {
   // Creat a timer for our node, currently set to 20 Hz (Argument specified in seconds)
   ros::Timer timer = node_handle.createTimer(ros::Duration(0.05), timerCallback);
 
-  // Creates a pcmd_vel ublisher
+  // Creates a cmd_vel publisher
   pub = node_handle.advertise<geometry_msgs::Twist>("/ego_vehicle/cmd_vel", 1);
 
   // Keep the node running
