@@ -13,7 +13,9 @@
 
 // Implementing header files in the program
 #include <ros/ros.h> // ROS header file
-#include <gazebo_msgs/ModelState.h> // Gazebo messages to get positions of the models in the simulation
+#include <gazebo_msgs/ModelStates.h> // Gazebo messages to get positions of the models in the simulation
+//#include <gazebo_msgs/LinkStates.h>
+//#include <gazebo_msgs/SetModelState.h>
 #include <cmath> // Math library for sqrt function used in displacement calculation
 #include <geometry_msgs/Vector3.h> // pose.position is of Vector3 type (x, y, z [Cartesian])
 #include <geometry_msgs/Twist.h> // Library for linear and angular velocity for x, y, and z axes.
@@ -38,7 +40,7 @@ const double following_distance = 1.0;
 static ros::Publisher pub; 
 
 // Callback function whenever a new /gazebo/model_states message is received
-void modelStatesCallbackFunction(const gazebo_msgs::ModelState::ConstPtr& msg) {
+void modelStatesCallbackFunction(const gazebo_msgs::ModelStates msg) {
   // "rostopic echo /gazebo/model_states" gives:
 
   // name: 
@@ -53,8 +55,12 @@ void modelStatesCallbackFunction(const gazebo_msgs::ModelState::ConstPtr& msg) {
   // End of topic /gazebo/model_states name list
 
   //Assign values based on index (above)
-  const auto& ego_vehicle_position = msg->pose.position; // Index 5 corresponds to EGO vehicle model           
-  const auto& target_vehicle_position = msg->pose.position; // Index 6 corresponds to Target vehicle model
+  //poses = msg->pose;
+  //const auto& ego_vehicle_position = msg->pose[5].position; // Index 5 corresponds to EGO vehicle model           
+  //const auto& target_vehicle_position = msg->pose.position; // Index 6 corresponds to Target vehicle model
+  ego_vehicle_position  = msg.pose[5];
+  target_vehicle_position = msg.pose[6]
+
 }
 
 // Timer callback - runs every 100ms
