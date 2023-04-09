@@ -1,24 +1,19 @@
-//Program to implement adaptive cruise control (ACC) feature
+#include <ros/ros.h> // ROS header file
+#include <gazebo_msgs/ModelStates.h> // Gazebo messages to get positions of the models in the simulation
+#include <cmath> // Math library for sqrt function used in displacement calculation
+#include <geometry_msgs/Vector3.h> // pose.position is of Vector3 type (x, y, z [Cartesian])
+#include <geometry_msgs/Twist.h> // Library for linear and angular velocity for x, y, and z axes.// Implementing header files in the program
+#include <geometry_msgs/Pose.h>
 
+/*Program to implement adaptive cruise control ACC feature*/
 // Version 1.1 
 // Date: 4/2/2023
 // Cleaned up code/comments and fixed errors in previous version
-
 // Authors (github names):
 // jseablom (N/A)
 // Kacper Wojtowicz (KacoerWijtowicz)
 // YawanthBoppana (rogueassassin14)
 // Kristof von Czarnowski (kristofvonc)
-
-
-// Implementing header files in the program
-#include <ros/ros.h> // ROS header file
-#include <gazebo_msgs/ModelStates.h> // Gazebo messages to get positions of the models in the simulation
-//#include <gazebo_msgs/LinkStates.h>
-//#include <gazebo_msgs/SetModelState.h>
-#include <cmath> // Math library for sqrt function used in displacement calculation
-#include <geometry_msgs/Vector3.h> // pose.position is of Vector3 type (x, y, z [Cartesian])
-#include <geometry_msgs/Twist.h> // Library for linear and angular velocity for x, y, and z axes.
 
 // In the context of audibot, we use the x component for linear velocity and y component for angular velocity (steering)
 
@@ -29,6 +24,7 @@
 //then replace the linear.x field with a new speed, keeping the angular.z unchanged
 
 // Global variables to store the position of the target and ego vehicle models
+
 geometry_msgs::Pose target_vehicle_position;
 geometry_msgs::Pose ego_vehicle_position; 
 
@@ -59,7 +55,7 @@ void modelStatesCallbackFunction(const gazebo_msgs::ModelStates msg) {
   //const auto& ego_vehicle_position = msg->pose[5].position; // Index 5 corresponds to EGO vehicle model           
   //const auto& target_vehicle_position = msg->pose.position; // Index 6 corresponds to Target vehicle model
   ego_vehicle_position  = msg.pose[5];
-  target_vehicle_position = msg.pose[6]
+  target_vehicle_position = msg.pose[6];
 
 }
 
