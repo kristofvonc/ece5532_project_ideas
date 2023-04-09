@@ -13,7 +13,7 @@ include_directories(
 )
 
 add_executable(audibot_acc
-  src/gps_example.cpp
+  src/audibot_acc.cpp
 )
 target_link_libraries(audibot_acc
   ${catkin_LIBRARIES}

@@ -27,7 +27,7 @@
     </node>
     <node pkg="audibot_twist_controller" type="audibot_twist_node" name="twist_control" output="screen" />
     <!-- added this line below -->
-    <node pkg="audibot_acc" type="gps_example" name="audibot_acc_node" output="screen" />
+    <node pkg="audibot_acc" type="audibot_acc" name="audibot_acc" output="screen" />
   </group>
 
   <!-- Target vehicle -->

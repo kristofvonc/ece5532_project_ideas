@@ -5,7 +5,7 @@
 #include <geometry_msgs/Twist.h> // Library for linear and angular velocity for x, y, and z axes.// Implementing header files in the program
 #include <geometry_msgs/Pose.h>
 
-/*Program to implement adaptive cruise control ACC feature*/
+// Program to implement adaptive cruise control ACC feature
 // Version 1.1 
 // Date: 4/2/2023
 // Cleaned up code/comments and fixed errors in previous version
@@ -111,7 +111,7 @@ void timerCallback(const ros::TimerEvent& event)
 
 // Main function - Initializing the adaptive cruise control (ACC) node, subscribers and timers.
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "audibot_acc_node");
+  ros::init(argc, argv, "audibot_acc");
 
   // Ceate a nodehandle for the acc node
   ros::NodeHandle node_handle;
