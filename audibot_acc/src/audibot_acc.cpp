@@ -4,13 +4,14 @@
 #include <geometry_msgs/Vector3.h> // pose.position is of Vector3 type (x, y, z [Cartesian])
 #include <geometry_msgs/Twist.h> // Library for linear and angular velocity for x, y, and z axes.// Implementing header files in the program
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/TwistStamped.h>
 
 // Program to implement adaptive cruise control ACC feature
 // Version 1.1 
 // Date: 4/2/2023
 // Cleaned up code/comments and fixed errors in previous version
 // Authors (github names):
-// jseablom (N/A)
+// jseablom (jseablom)
 // Kacper Wojtowicz (KacoerWijtowicz)
 // YawanthBoppana (rogueassassin14)
 // Kristof von Czarnowski (kristofvonc)
@@ -27,7 +28,7 @@
 
 geometry_msgs::Pose target_vehicle_position;
 geometry_msgs::Pose ego_vehicle_position; 
-
+ geometry_msgs::Twist twist_cmd;
 // Set the desired following distance for adaptive cruise control
 const double following_distance = 1.0; 
 // The value of '1' may need to be 'tuned' based on vehicle dynamics (braking/acceleration ability of audibot)
@@ -59,6 +60,12 @@ void modelStatesCallbackFunction(const gazebo_msgs::ModelStates msg) {
 
 }
 
+void twistTime(const geometry_msgs::TwistStamped msg) {
+
+  twist_cmd.angular.z = msg.twist.angular.z;
+
+}
+
 // Timer callback - runs every 100ms
 void timerCallback(const ros::TimerEvent& event) 
 {
@@ -81,7 +88,7 @@ void timerCallback(const ros::TimerEvent& event)
   // Try to get parameter "speed" from launch file
   if (!ros::param::get("speed", linear_speed)) {
     // If parameter not found, assign the default value + 0.1 (for debugging purposes)
-    linear_speed = 23.1;
+    linear_speed = 13.1;
   }
 
   // Basic control algorithm, may want to implement PID controller, as Yaswanth was suggesting...
@@ -99,10 +106,11 @@ void timerCallback(const ros::TimerEvent& event)
   ROS_INFO("Linear speed = %f", linear_speed); // For debugging: print linear speed value
 
   // Publishing the speed command 
-  geometry_msgs::Twist twist_cmd;
+ 
   // Note: Need to remap the twist messages from audibot_path_following node to this (acc) node 
   twist_cmd.linear.x = linear_speed; 
-  twist_cmd.angular.z = 0.0; // Not the correct angular.z value, need to pass from audibot_path_following node
+  //twist_cmd.angular.z = 0.0; // Not the correct angular.z value, need to pass from audibot_path_following node
+  //ego_vehile/twist
   //Publish to twist_cmd 
   pub.publish(twist_cmd);
   //Was using "static ros::Publisher pub = node_handle.advertise<geometry_msgs::Twist>("/ego_vehicle/cmd_vel", 1);" previously
@@ -118,6 +126,8 @@ int main(int argc, char **argv) {
 
   // Subscriber to "gazebo/model_states"
   ros::Subscriber model_states_subscriber = node_handle.subscribe("/gazebo/model_states", 1, modelStatesCallbackFunction);
+
+  ros::Subscriber twist_subscriber = node_handle.subscribe("/ego_vehicle/twist", 1, twistTime);
 
   // Creat a timer for our node, currently set to 20 Hz (Argument specified in seconds)
   ros::Timer timer = node_handle.createTimer(ros::Duration(0.05), timerCallback);
