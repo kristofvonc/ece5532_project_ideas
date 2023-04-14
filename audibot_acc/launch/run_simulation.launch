@@ -27,7 +27,9 @@
     </node>
     <node pkg="audibot_twist_controller" type="audibot_twist_node" name="twist_control" output="screen" />
     <!-- added this line below -->
-    <node pkg="audibot_acc" type="audibot_acc" name="audibot_acc" output="screen" />
+    <node pkg="audibot_acc" type="audibot_acc" name="audibot_acc" output="screen" >
+    <!--  <remap from="ego_vehicle/cmd_vel" to="/ego_vehicle/cmd_vel2"> -->
+    </node>
   </group>
 
   <!-- Target vehicle -->

@@ -28,9 +28,10 @@
 
 geometry_msgs::Pose target_vehicle_position;
 geometry_msgs::Pose ego_vehicle_position; 
- geometry_msgs::Twist twist_cmd;
+geometry_msgs::Twist twist_cmd;
 // Set the desired following distance for adaptive cruise control
-const double following_distance = 1.0; 
+const double following_distance = 5.0; 
+double twist_cmd_placeholder = 0;
 // The value of '1' may need to be 'tuned' based on vehicle dynamics (braking/acceleration ability of audibot)
 
 //Create static publisher
@@ -61,9 +62,7 @@ void modelStatesCallbackFunction(const gazebo_msgs::ModelStates msg) {
 }
 
 void twistTime(const geometry_msgs::TwistStamped msg) {
-
-  twist_cmd.angular.z = msg.twist.angular.z;
-
+  twist_cmd_placeholder = msg.twist.angular.z;
 }
 
 // Timer callback - runs every 100ms
@@ -80,7 +79,7 @@ void timerCallback(const ros::TimerEvent& event)
   double displacement  = std::sqrt(dx*dx + dy*dy + dz*dz);
 
   // Print calculated displacement to the console for debugging purposes
-  ROS_INFO("Displacement = %f", displacement);
+  ROS_INFO("Following distance = %f meters", displacement);
 
   // Control algorithm for linear speed based on straight-line displacement and defined following distance
   double linear_speed = 0.0; 
@@ -91,27 +90,34 @@ void timerCallback(const ros::TimerEvent& event)
     linear_speed = 13.1;
   }
 
+  ROS_INFO("Steering angle = %f radians", twist_cmd_placeholder);
+
   // Basic control algorithm, may want to implement PID controller, as Yaswanth was suggesting...
   // We may also want to control our speed based on time-to-collision (or 'TTC') or relative velocity.
 
   // If the distance is greater than the set following distance, 
   // maintain the same (set) linear speed, 
   // otherwise adjust the set speed based on the distance between the two vehicles.
-  if (displacement > following_distance) {
-    linear_speed = linear_speed; // Maintain speed - Do not speed up - Speeding ticket!
-  } else { 
-    linear_speed = displacement/following_distance * linear_speed; // Adjust speed based on distance
+  if (displacement > 2*following_distance) {
+   linear_speed = displacement / (2*following_distance) * linear_speed; // Speed up - Open road
+  } else if (displacement > following_distance && displacement <= 2*following_distance) {
+   linear_speed = 13.1; // Traffic nearby - Maintain (default) speed 
+  } else if (displacement > following_distance/2 && displacement <= following_distance) {
+   linear_speed = displacement / following_distance * linear_speed; // Getttingc closer- Slow down slightly
+  } else {
+   linear_speed = 0; // Too close - Slow down quickly
   }
 
-  ROS_INFO("Linear speed = %f", linear_speed); // For debugging: print linear speed value
+  ROS_INFO("Set linear speed = %f", linear_speed); // For debugging: print linear speed value
 
   // Publishing the speed command 
  
   // Note: Need to remap the twist messages from audibot_path_following node to this (acc) node 
   twist_cmd.linear.x = linear_speed; 
   //twist_cmd.angular.z = 0.0; // Not the correct angular.z value, need to pass from audibot_path_following node
-  //ego_vehile/twist
+  twist_cmd.angular.z = twist_cmd_placeholder;
   //Publish to twist_cmd 
+
   pub.publish(twist_cmd);
   //Was using "static ros::Publisher pub = node_handle.advertise<geometry_msgs::Twist>("/ego_vehicle/cmd_vel", 1);" previously
 
@@ -129,10 +135,11 @@ int main(int argc, char **argv) {
 
   ros::Subscriber twist_subscriber = node_handle.subscribe("/ego_vehicle/twist", 1, twistTime);
 
-  // Creat a timer for our node, currently set to 20 Hz (Argument specified in seconds)
-  ros::Timer timer = node_handle.createTimer(ros::Duration(0.05), timerCallback);
+  // Creat a timer for our node, currently set to 10 Hz (Argument specified in seconds)
+  ros::Timer timer = node_handle.createTimer(ros::Duration(0.1), timerCallback);
 
   // Creates a cmd_vel publisher
+  //pub = node_handle.advertise<geometry_msgs::Twist>("/ego_vehicle/cmd_vel2", 1);
   pub = node_handle.advertise<geometry_msgs::Twist>("/ego_vehicle/cmd_vel", 1);
 
   // Keep the node running
