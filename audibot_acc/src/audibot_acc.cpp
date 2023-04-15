@@ -22,7 +22,7 @@
 // YawanthBoppana (rogueassassin14)
 // Kristof von Czarnowski (kristofvonc)
 
-int stage = 1;
+int stage = 2;
 //set 'stage' variable to:
 // 0 - Level 1: Implement core system with ideal measurements
 // 1 - Level 2: Use a LIDAR sensor to detect the lead vehicle
@@ -96,6 +96,7 @@ void timerCallback(const ros::TimerEvent& event) {
 
   if (stage == 2) {
     //PLACEHOLDER
+    displacement = 100;
   }
 
   // Print calculated displacement to the console for debugging purposes
