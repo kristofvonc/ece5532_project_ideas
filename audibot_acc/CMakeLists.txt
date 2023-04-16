@@ -3,13 +3,19 @@ project(audibot_acc)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  cv_bridge
   geometry_msgs
 )
 
-catkin_package()
+find_package(OpenCV REQUIRED)
+
+catkin_package(
+  DEPENDS OpenCV
+)
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 add_executable(audibot_acc
@@ -17,4 +23,5 @@ add_executable(audibot_acc
 )
 target_link_libraries(audibot_acc
   ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
 )

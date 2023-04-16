@@ -16,9 +16,18 @@
 
 //Stage 3 libraries
 #include <sensor_msgs/Image.h>
+#include <opencv2/opencv.hpp>
+#include <cv_bridge/cv_bridge.h>
 
 // jseablom (jseablom)
 // Kacper Wojtowicz (KacoerWijtowicz)
+// Program to implement adaptive cruise control ACC feature
+// Version 1.1 
+// Date: 4/2/2023
+// Cleaned up code/comments and fixed errors in previous version
+// Authors (github names):
+// jseablom (N/A)
+// Kacper Wojtowicz (KacperWojtowicz)
 // YawanthBoppana (rogueassassin14)
 // Kristof von Czarnowski (kristofvonc)
 
@@ -50,6 +59,8 @@ double camera_pitch = 0.275643; // Pitch angle of the ego camera in radians
 double camera_fov = 1.3962634; // Field of view of the ego camera in radians
 double lead_vehicle_height = 1.0; // Height of the lead vehicle from the ground plane in meters
 
+// The value of '1' may need to be 'tuned' based on vehicle dynamics (braking/acceleration ability of audibot)
+
 
 // Callback function whenever a new /gazebo/model_states message is received
 void modelStatesCallbackFunction(const gazebo_msgs::ModelStates msg) {
@@ -64,9 +75,55 @@ void lidarCallbackFunction(const sensor_msgs::LaserScan::ConstPtr& msg) {
   }
 }
 
+
+
+
 // Callback function whenever a new camera image is received
 void cameraCallbackFunction(const sensor_msgs::Image::ConstPtr& msg) {
-    // Convert ROS image message to OpenCV image
+  // Convert raw image from ROS image message into a cv::Mat
+  cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, msg->encoding);
+  cv::Mat raw_img = cv_ptr->image;
+
+  cv::imshow("Raw Image", raw_img);
+  cv::waitKey(1);
+
+  // Split RGB image into its three separate channels
+  std::vector<cv::Mat> split_images;
+  cv::split(raw_img, split_images);
+
+  // Extract the blue channel into its own grayscale image
+  cv::Mat blue_image = split_images[0];
+
+  cv::imshow("Blue Image", blue_image);
+  cv::waitKey(1);
+
+  // Apply binary threshold to create a binary image where white pixels correspond to high blue values
+  cv::Mat thres_img;
+  cv::threshold(blue_image, thres_img, 180, 255, cv::THRESH_BINARY);
+
+  cv::imshow("Thres Image", thres_img);
+  cv::waitKey(1);
+
+  // Apply erosion to clean up noise
+  cv::Mat erode_img;
+  cv::erode(thres_img, erode_img, cv::Mat::ones(5, 5, CV_8U));
+
+  cv::imshow("Erode Image", erode_img);
+  cv::waitKey(1);
+
+  // Apply dilation to expand regions that passed the erosion filter
+  cv::Mat dilate_img;
+  cv::dilate(erode_img, dilate_img, cv::Mat::ones(5, 5, CV_8U));
+
+  cv::imshow("Dilate Image", dilate_img);
+  cv::waitKey(1);
+
+  // Apply Canny edge detection to reduce the number of points that are passed to Hough Transform
+  cv::Mat canny_img;
+  cv::Canny(dilate_img, canny_img, 1, 2);
+  cv::imshow("Canny Image", canny_img);
+
+    
     // Crop and resize image
     // Convert image to grayscale and apply Canny edge detection
     // Find contours in the image
@@ -154,6 +211,16 @@ int main(int argc, char **argv) {
   if (stage == 1) {
    ROS_INFO("Subscribed to laser scan (Stage 2)...");
   }
+
+
+  //Names Windows
+  cv::namedWindow("Raw Image", cv::WINDOW_AUTOSIZE);
+  cv::namedWindow("Blue Image", cv::WINDOW_AUTOSIZE);
+  cv::namedWindow("Thres Image", cv::WINDOW_AUTOSIZE);
+  cv::namedWindow("Erode Image", cv::WINDOW_AUTOSIZE);
+  cv::namedWindow("Dilate Image", cv::WINDOW_AUTOSIZE);
+  cv::namedWindow("Canny Image", cv::WINDOW_AUTOSIZE);
+  cv::namedWindow("Lines Image", cv::WINDOW_AUTOSIZE);
 
   // Subscriber to "/ego_vehicle/front_camera/image_rect_color"
   ros::Subscriber camera_subscriber = node_handle.subscribe("/ego_vehicle/front_camera/image_raw", 1, cameraCallbackFunction);  
