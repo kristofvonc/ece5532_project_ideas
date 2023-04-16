@@ -93,10 +93,19 @@ void cameraCallbackFunction(const sensor_msgs::Image::ConstPtr& msg) {
 
   // Extract the blue channel into its own grayscale image
   cv::Mat blue_image = split_images[0];
+  cv::Mat green_image = split_images[1];
+  cv::Mat red_image = split_images[2];
+
 
   cv::imshow("Blue Image", blue_image);
   cv::waitKey(1);
 
+  cv::imshow("Red Image", red_image);
+  cv::waitKey(1);
+
+    cv::imshow("Green Image", green_image);
+  cv::waitKey(1);
+  
   // Apply binary threshold to create a binary image where white pixels correspond to high blue values
   cv::Mat thres_img;
   cv::threshold(blue_image, thres_img, 180, 255, cv::THRESH_BINARY);
@@ -216,6 +225,8 @@ int main(int argc, char **argv) {
   //Names Windows
   cv::namedWindow("Raw Image", cv::WINDOW_AUTOSIZE);
   cv::namedWindow("Blue Image", cv::WINDOW_AUTOSIZE);
+  cv::namedWindow("Green Image", cv::WINDOW_AUTOSIZE);
+  cv::namedWindow("Red Image", cv::WINDOW_AUTOSIZE);
   cv::namedWindow("Thres Image", cv::WINDOW_AUTOSIZE);
   cv::namedWindow("Erode Image", cv::WINDOW_AUTOSIZE);
   cv::namedWindow("Dilate Image", cv::WINDOW_AUTOSIZE);
