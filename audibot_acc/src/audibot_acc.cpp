@@ -31,7 +31,7 @@
 // YawanthBoppana (rogueassassin14)
 // Kristof von Czarnowski (kristofvonc)
 
-int stage = 2;
+int stage = 0;
 //set 'stage' variable to:
 // 0 - Level 1: Implement core system with ideal measurements
 // 1 - Level 2: Use a LIDAR sensor to detect the lead vehicle
@@ -41,6 +41,7 @@ double refresh_rate = 0.1;
 
 // Set the desired following distance for adaptive cruise control
 const double following_distance = 10.0; 
+double following_error_margin = 1;
 
 //Create geoemtry messages 
 geometry_msgs::Pose target_vehicle_position;
@@ -78,8 +79,6 @@ void lidarCallbackFunction(const sensor_msgs::LaserScan::ConstPtr& msg) {
 }
 
 
-
-
 // Callback function whenever a new camera image is received
 void cameraCallbackFunction(const sensor_msgs::Image::ConstPtr& msg) {
   // Convert raw image from ROS image message into a cv::Mat
@@ -102,14 +101,17 @@ void cameraCallbackFunction(const sensor_msgs::Image::ConstPtr& msg) {
   cv::imshow("Blue Image", blue_image);
   cv::waitKey(1);
 
+/*
   cv::imshow("Red Image", red_image);
   cv::waitKey(1);
 
-    cv::imshow("Green Image", green_image);
+  cv::imshow("Green Image", green_image);
   cv::waitKey(1);
+
+*/
   // Apply binary threshold to create a binary image where white pixels correspond to high blue values
   cv::Mat thres_img;
-  cv::threshold(blue_image, thres_img, 50, 100, cv::THRESH_BINARY);
+  cv::threshold(blue_image, thres_img, 20, 255, cv::THRESH_BINARY);
 
   cv::imshow("Thres Image", thres_img);
   cv::waitKey(1);
@@ -181,11 +183,13 @@ void timerCallback(const ros::TimerEvent& event) {
   // Basic control algorithm, may want to implement PID controller, as Yaswanth was suggesting...
   // We may also want to control our speed based on time-to-collision (or 'TTC') or relative velocity.
 
-  if (displacement > 2*following_distance) {
-   linear_speed = displacement / (2*following_distance) * linear_speed; // Speed up - Open road
-  } else if (displacement > following_distance && displacement <= 2*following_distance) {
+
+
+  if (displacement > (1+following_error_margin)*following_distance) {
+   linear_speed = displacement / ((1+following_error_margin)*following_distance) * linear_speed; // Speed up - Open road
+  } else if (displacement > following_distance && displacement <= (1+following_error_margin)*following_distance) {
    linear_speed = 13.1; // Traffic nearby - Maintain (default) speed 
-  } else if (displacement > following_distance/2 && displacement <= following_distance) {
+  } else if (displacement > following_distance/(1+following_error_margin) && displacement <= following_distance) {
    linear_speed = displacement / following_distance * linear_speed; // Getttingc closer- Slow down slightly
   } else {
    linear_speed = 0; // Too close - Slow down quickly
