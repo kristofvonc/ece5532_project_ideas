@@ -37,6 +37,8 @@ int stage = 2;
 // 1 - Level 2: Use a LIDAR sensor to detect the lead vehicle
 // 2 - Level 3: Use the camera to detect the lead vehicle
 
+double refresh_rate = 0.1;
+
 // Set the desired following distance for adaptive cruise control
 const double following_distance = 10.0; 
 
@@ -99,22 +101,15 @@ void cameraCallbackFunction(const sensor_msgs::Image::ConstPtr& msg) {
 
   cv::imshow("Blue Image", blue_image);
   cv::waitKey(1);
-  /*
+
   cv::imshow("Red Image", red_image);
   cv::waitKey(1);
 
     cv::imshow("Green Image", green_image);
   cv::waitKey(1);
-<<<<<<< Updated upstream
-  */
   // Apply binary threshold to create a binary image where white pixels correspond to high blue values
   cv::Mat thres_img;
   cv::threshold(blue_image, thres_img, 50, 100, cv::THRESH_BINARY);
-=======
-  // Apply binary threshold to create a binary image where white pixels correspond to high blue values
-  cv::Mat thres_img;
-  cv::threshold(green_image, thres_img, 180, 255, cv::THRESH_BINARY);
->>>>>>> Stashed changes
 
   cv::imshow("Thres Image", thres_img);
   cv::waitKey(1);
@@ -248,7 +243,7 @@ int main(int argc, char **argv) {
   ros::Subscriber twist_subscriber = node_handle.subscribe("/ego_vehicle/twist", 1, twistTime);
 
   // Creat a timer for our node, currently set to 10 Hz (Argument specified in seconds)
-  ros::Timer timer = node_handle.createTimer(ros::Duration(0.1), timerCallback);
+  ros::Timer timer = node_handle.createTimer(ros::Duration(refresh_rate), timerCallback);
 
   // Creates a cmd_vel publisher
   //pub = node_handle.advertise<geometry_msgs::Twist>("/ego_vehicle/cmd_vel2", 1);
