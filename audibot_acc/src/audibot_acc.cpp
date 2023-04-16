@@ -99,16 +99,16 @@ void cameraCallbackFunction(const sensor_msgs::Image::ConstPtr& msg) {
 
   cv::imshow("Blue Image", blue_image);
   cv::waitKey(1);
-
+  /*
   cv::imshow("Red Image", red_image);
   cv::waitKey(1);
 
     cv::imshow("Green Image", green_image);
   cv::waitKey(1);
-  
+  */
   // Apply binary threshold to create a binary image where white pixels correspond to high blue values
   cv::Mat thres_img;
-  cv::threshold(blue_image, thres_img, 180, 255, cv::THRESH_BINARY);
+  cv::threshold(blue_image, thres_img, 50, 100, cv::THRESH_BINARY);
 
   cv::imshow("Thres Image", thres_img);
   cv::waitKey(1);
