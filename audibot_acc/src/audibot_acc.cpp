@@ -18,6 +18,17 @@
 #include <sensor_msgs/Image.h>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include <iostream> 
+#include <image_geometry/pinhole_camera_model.h>
+#include <sensor_msgs/CameraInfo.h>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <stdexcept>
+#include <string>
+#include <math.h>
+
+int seg_length;
+int focal;
 
 // jseablom (jseablom)
 // Kacper Wojtowicz (KacoerWijtowicz)
@@ -50,7 +61,7 @@ static ros::Subscriber sub_laser;
 
 double twist_cmd_placeholder = 0;
 double displacement = 100;
-
+image_geometry::PinholeCameraModel PinholeCameraModel;
 //Placement of ego vehicle camera
 //(5,-5,2) units in the X, Y, and Z directions, respectively
 //(0.275643, 2.35619) represent the rotation around the X (roll) and Y (pitch) axes in radians
@@ -75,9 +86,13 @@ void lidarCallbackFunction(const sensor_msgs::LaserScan::ConstPtr& msg) {
   }
 }
 
+void cameraCallbackFunction2(const sensor_msgs::CameraInfoConstPtr& msg2) {
 
+  PinholeCameraModel.fromCameraInfo(msg2);
+  focal=PinholeCameraModel.fy();
+  ROS_INFO_STREAM("fy: " << focal);
 
-
+}
 // Callback function whenever a new camera image is received
 void cameraCallbackFunction(const sensor_msgs::Image::ConstPtr& msg) {
   // Convert raw image from ROS image message into a cv::Mat
@@ -99,22 +114,33 @@ void cameraCallbackFunction(const sensor_msgs::Image::ConstPtr& msg) {
 
   cv::imshow("Blue Image", blue_image);
   cv::waitKey(1);
-  /*
+  
   cv::imshow("Red Image", red_image);
   cv::waitKey(1);
 
-    cv::imshow("Green Image", green_image);
+  cv::imshow("Green Image", green_image);
   cv::waitKey(1);
-<<<<<<< Updated upstream
-  */
-  // Apply binary threshold to create a binary image where white pixels correspond to high blue values
   cv::Mat thres_img;
-  cv::threshold(blue_image, thres_img, 50, 100, cv::THRESH_BINARY);
-=======
+  cv::Mat t1;
+  cv::Mat t2;
+  cv::Mat t3;
+  cv::Mat t4;
+  cv::threshold(red_image, t1, 50, 256, cv::THRESH_BINARY);
+  cv::threshold(red_image, t2, 80, 256, cv::THRESH_BINARY_INV);
+
+  cv::bitwise_and(t1, t2, thres_img);
+  
+
+
+  
+  // Apply binary threshold to create a binary image where white pixels correspond to high blue values
+  //cv::Mat thres_img;
+  //cv::threshold(red_image, thres_img, 40, 200, cv::THRESH_BINARY);
+/*
   // Apply binary threshold to create a binary image where white pixels correspond to high blue values
   cv::Mat thres_img;
   cv::threshold(green_image, thres_img, 180, 255, cv::THRESH_BINARY);
->>>>>>> Stashed changes
+*/
 
   cv::imshow("Thres Image", thres_img);
   cv::waitKey(1);
@@ -144,6 +170,55 @@ void cameraCallbackFunction(const sensor_msgs::Image::ConstPtr& msg) {
     // Find contours in the image
     // Find the contour with the largest area, which corresponds to the lead vehicle
     // Calculate the distance to the lead vehicle using trigonometry
+
+  // TODO: Run Probabilistic Hough Transform algorithm to detect line segments
+  std::vector<cv::Vec4i> line_segments;
+  cv::HoughLinesP(canny_img, line_segments,  10, 0.05, 2, 10, 50);
+
+  //printf(line_segments.data[2]);
+  
+  
+  // Draw detected Hough lines onto the raw image for visualization
+  for (int i=0; i<line_segments.size(); i++){
+    cv::line(raw_img, cv::Point(line_segments[i][0], line_segments[i][1]),
+      cv::Point(line_segments[i][2], line_segments[i][3]), cv::Scalar(0, 255, 0));
+      float seg_y = line_segments[i][0] - line_segments[i][2];
+      float seg_x = line_segments[i][1] - line_segments[i][3];
+
+      seg_length = sqrt(pow(seg_y,2) + pow(seg_x,2));
+      ROS_INFO_STREAM("Line Length in Pixels: " << seg_length);
+      ROS_INFO_STREAM("Displacement: " << displacement);
+      twist_cmd.linear.x = 5; 
+      pub.publish(twist_cmd);
+      
+  }
+
+  cv::imshow("Lines Image", raw_img);
+  cv::waitKey(1);
+
+
+int real_height=800;
+int obj_height = 2;
+int sensor_height = 2;
+int image_height = 50; 
+
+double dx = target_vehicle_position.position.x - ego_vehicle_position.position.x;
+double dy = target_vehicle_position.position.y - ego_vehicle_position.position.y;
+double dz = target_vehicle_position.position.z - ego_vehicle_position.position.z;
+displacement = std::sqrt(dx*dx + dy*dy + dz*dz);
+  
+
+//int focal = (8670*104*1000)/(1000*500);
+
+//int dist = ();'
+
+
+
+
+
+
+
+
 }
 
 void twistTime(const geometry_msgs::TwistStamped msg) {
@@ -241,11 +316,14 @@ int main(int argc, char **argv) {
 
   // Subscriber to "/ego_vehicle/front_camera/image_rect_color"
   ros::Subscriber camera_subscriber = node_handle.subscribe("/ego_vehicle/front_camera/image_raw", 1, cameraCallbackFunction);  
+  ros::Subscriber camera2_subscriber = node_handle.subscribe("/ego_vehicle/front_camera/camera_info", 1, cameraCallbackFunction2);
   if (stage == 2) {
    ROS_INFO("Subscribed to camera (Stage 3)...");
   }
   
   ros::Subscriber twist_subscriber = node_handle.subscribe("/ego_vehicle/twist", 1, twistTime);
+
+   
 
   // Creat a timer for our node, currently set to 10 Hz (Argument specified in seconds)
   ros::Timer timer = node_handle.createTimer(ros::Duration(0.1), timerCallback);
@@ -259,3 +337,4 @@ int main(int argc, char **argv) {
 
   //return 0;
 }
+
