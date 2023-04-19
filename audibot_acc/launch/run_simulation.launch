@@ -23,11 +23,12 @@
   </include>
   <group ns="ego_vehicle">
     <node pkg="audibot_path_following" type="audibot_path_following" name="path_following" output="screen">
-      <param name="speed" value="23.0" />
+      <param name="speed" value="22.0" />
     </node>
     <node pkg="audibot_twist_controller" type="audibot_twist_node" name="twist_control" output="screen" />
     <!-- added this line below -->
-    <node pkg="audibot_acc" type="audibot_acc" name="audibot_acc" output="screen" >
+    <node pkg="audibot_acc" type="audibot_acc" name="audibot_acc" output="screen" > 
+     
     <!--  <remap from="ego_vehicle/cmd_vel" to="/ego_vehicle/cmd_vel2"> -->
     </node>
   </group>
