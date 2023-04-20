@@ -9,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(OpenCV REQUIRED)
 
-catkin_package(
+  catkin_package(
   DEPENDS OpenCV
 )
 
